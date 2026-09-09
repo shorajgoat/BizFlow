@@ -1,40 +1,60 @@
 package com.himal.jewellery.auth;
 
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.himal.jewellery.user.UserService;
+import com.himal.jewellery.security.JwtUtil;
 import com.himal.jewellery.user.LoginRequestDto;
+import com.himal.jewellery.user.RegisterRequestDto;
 import com.himal.jewellery.user.User;
 import com.himal.jewellery.user.UserRepository;
-
-import java.util.Optional;
-
+import com.himal.jewellery.user.UserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
-@Autowired
-private  UserService userService;
-@Autowired
-private UserRepository userRepo;
-@Autowired
-private PasswordEncoder encoder;
 
-@PostMapping("/login")
-public ResponseEntity<String> login(@RequestBody LoginRequestDto dto) {
+    @Autowired
+    private UserRepository userRepo;
 
-    Optional<User> userOptional = userRepo.findByUsername(dto.getUsername()); 
+    @Autowired
+    private PasswordEncoder encoder;
 
-    if (userOptional.isEmpty() || !encoder.matches(dto.getPassword(), userOptional.get().getPassword())) {
-        return ResponseEntity.status(401).body("Invalid username or password");
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    @Autowired
+    private UserService userService;
+
+    @PostMapping("/login")
+    public ResponseEntity<String> login(@RequestBody LoginRequestDto dto) {
+
+        User user = userRepo.findByUsername(dto.getUsername()).orElse(null);
+
+        if (user == null) {
+            return ResponseEntity.status(401).body("Invalid Username or password");
+        }
+
+        if (encoder.matches(dto.getPassword(), user.getPassword())) {
+            String token = jwtUtil.generateToken(user.getUsername(), user.getRole());
+            return ResponseEntity.ok(token);
+        }
+
+        return ResponseEntity.status(401).body("Invalid Username or password");
     }
 
-    return ResponseEntity.ok("Login successful. Welcome " + userOptional.get().getFullname());
-}
+    @PostMapping("/register")
+    public ResponseEntity<String> register(@Valid @RequestBody RegisterRequestDto dto) {
+
+        if (userRepo.findByUsername(dto.getUsername()).isPresent()) {
+            return ResponseEntity.status(409).body("Username already taken");
+        }
+
+        User newUser = new User(dto.getFullName(), dto.getUsername(), dto.getPassword(), dto.getRole());
+        userService.registerUser(newUser);
+
+        return ResponseEntity.ok("User registered successfully");
+    }
 }
