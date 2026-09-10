@@ -1,5 +1,7 @@
 package com.himal.jewellery.auth;
 
+import com.himal.jewellery.exception.DuplicateUsernameException;
+import com.himal.jewellery.exception.InvalidCredentialsException;
 import com.himal.jewellery.security.JwtUtil;
 import com.himal.jewellery.user.LoginRequestDto;
 import com.himal.jewellery.user.RegisterRequestDto;
@@ -31,25 +33,22 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody LoginRequestDto dto) {
 
-        User user = userRepo.findByUsername(dto.getUsername()).orElse(null);
+        User user = userRepo.findByUsername(dto.getUsername())
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid username or password"));
 
-        if (user == null) {
-            return ResponseEntity.status(401).body("Invalid Username or password");
+        if (!encoder.matches(dto.getPassword(), user.getPassword())) {
+            throw new InvalidCredentialsException("Invalid username or password");
         }
 
-        if (encoder.matches(dto.getPassword(), user.getPassword())) {
-            String token = jwtUtil.generateToken(user.getUsername(), user.getRole());
-            return ResponseEntity.ok(token);
-        }
-
-        return ResponseEntity.status(401).body("Invalid Username or password");
+        String token = jwtUtil.generateToken(user.getUsername(), user.getRole());
+        return ResponseEntity.ok(token);
     }
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@Valid @RequestBody RegisterRequestDto dto) {
 
         if (userRepo.findByUsername(dto.getUsername()).isPresent()) {
-            return ResponseEntity.status(409).body("Username already taken");
+            throw new DuplicateUsernameException("Username already taken");
         }
 
         User newUser = new User(dto.getFullName(), dto.getUsername(), dto.getPassword(), dto.getRole());
