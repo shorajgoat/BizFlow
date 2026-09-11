@@ -1,5 +1,6 @@
 package com.himal.jewellery.auth;
 
+import com.himal.jewellery.exception.ApiResponse;
 import com.himal.jewellery.exception.DuplicateUsernameException;
 import com.himal.jewellery.exception.InvalidCredentialsException;
 import com.himal.jewellery.security.JwtUtil;
@@ -10,6 +11,7 @@ import com.himal.jewellery.user.UserRepository;
 import com.himal.jewellery.user.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -31,7 +33,7 @@ public class AuthController {
     private UserService userService;
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody LoginRequestDto dto) {
+    public ResponseEntity<ApiResponse<String>> login(@RequestBody LoginRequestDto dto) {
 
         User user = userRepo.findByUsername(dto.getUsername())
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid username or password"));
@@ -41,11 +43,13 @@ public class AuthController {
         }
 
         String token = jwtUtil.generateToken(user.getUsername(), user.getRole());
-        return ResponseEntity.ok(token);
+
+        ApiResponse<String> response = new ApiResponse<>(HttpStatus.OK.value(), "Login successful", token);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@Valid @RequestBody RegisterRequestDto dto) {
+    public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody RegisterRequestDto dto) {
 
         if (userRepo.findByUsername(dto.getUsername()).isPresent()) {
             throw new DuplicateUsernameException("Username already taken");
@@ -54,6 +58,7 @@ public class AuthController {
         User newUser = new User(dto.getFullName(), dto.getUsername(), dto.getPassword(), dto.getRole());
         userService.registerUser(newUser);
 
-        return ResponseEntity.ok("User registered successfully");
+        ApiResponse<Void> response = new ApiResponse<>(HttpStatus.OK.value(), "User registered successfully", null);
+        return ResponseEntity.ok(response);
     }
 }
