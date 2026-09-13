@@ -18,6 +18,9 @@ public class JwtUtil {
     @Value("${jwt.expiration}")
     private long jwtExpirationMillis;
 
+    @Value("${jwt.refresh.expiration}")
+    private long jwtRefreshExpirationMillis;
+
     private Key getSigningKey() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }
@@ -26,8 +29,19 @@ public class JwtUtil {
         return Jwts.builder()
                 .setSubject(username)
                 .claim("role", role)
+                .claim("type", "access")
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMillis))
+                .signWith(getSigningKey())
+                .compact();
+    }
+
+    public String generateRefreshToken(String username) {
+        return Jwts.builder()
+                .setSubject(username)
+                .claim("type", "refresh")
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + jwtRefreshExpirationMillis))
                 .signWith(getSigningKey())
                 .compact();
     }
@@ -38,6 +52,10 @@ public class JwtUtil {
 
     public String extractRole(String token) {
         return extractAllClaims(token).get("role", String.class);
+    }
+
+    public String extractTokenType(String token) {
+        return extractAllClaims(token).get("type", String.class);
     }
 
     public boolean validateToken(String token) {
