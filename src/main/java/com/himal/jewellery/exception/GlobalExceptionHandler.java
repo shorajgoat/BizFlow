@@ -44,6 +44,12 @@ public class GlobalExceptionHandler {
         ErrorResponse error = new ErrorResponse(HttpStatus.UNAUTHORIZED.value(), ex.getMessage());
         return new ResponseEntity<>(error, HttpStatus.UNAUTHORIZED);
     }
+    @ExceptionHandler(ProductNotFoundException.class)
+    public ResponseEntity<ErrorResponse>handleProductNotFound(ProductNotFoundException ex){
+    	ErrorResponse response=new ErrorResponse(HttpStatus.NOT_FOUND.value(),ex.getMessage());
+    	return new ResponseEntity<>(response,HttpStatus.NOT_FOUND);
+    	
+    }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
