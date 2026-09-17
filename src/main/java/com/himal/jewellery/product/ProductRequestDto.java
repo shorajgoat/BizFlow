@@ -26,6 +26,9 @@ public class ProductRequestDto {
 
     private String source;
 
+    @NotNull(message = "Category is required")
+    private Long categoryId;
+
     public ProductRequestDto() {}
 
     public String getName() { return name; }
@@ -40,4 +43,6 @@ public class ProductRequestDto {
     public void setMinStock(Integer minStock) { this.minStock = minStock; }
     public String getSource() { return source; }
     public void setSource(String source) { this.source = source; }
+    public Long getCategoryId() { return categoryId; }
+    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
 }
