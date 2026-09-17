@@ -3,12 +3,12 @@ package com.himal.jewellery.product;
 import com.himal.jewellery.exception.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/products")
@@ -18,8 +18,8 @@ public class ProductController {
     private ProductService productService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ProductResponseDto>>> getAllProducts() {
-        List<ProductResponseDto> products = productService.getAllProduct();
+    public ResponseEntity<ApiResponse<Page<ProductResponseDto>>> getAllProducts(Pageable pageable) {
+        Page<ProductResponseDto> products = productService.getAllProducts(pageable);
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), "Products fetched", products));
     }
 
