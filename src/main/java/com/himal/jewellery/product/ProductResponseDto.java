@@ -11,6 +11,8 @@ public class ProductResponseDto {
     private Integer stock;
     private Integer minStock;
     private String source;
+    private Long categoryId;
+    private String categoryName;
 
     public ProductResponseDto(Product product) {
         this.id = product.getId();
@@ -20,6 +22,10 @@ public class ProductResponseDto {
         this.stock = product.getStock();
         this.minStock = product.getMinStock();
         this.source = product.getSource();
+        if (product.getCategory() != null) {
+            this.categoryId = product.getCategory().getId();
+            this.categoryName = product.getCategory().getName();
+        }
     }
 
     public Long getId() { return id; }
@@ -29,4 +35,6 @@ public class ProductResponseDto {
     public Integer getStock() { return stock; }
     public Integer getMinStock() { return minStock; }
     public String getSource() { return source; }
+    public Long getCategoryId() { return categoryId; }
+    public String getCategoryName() { return categoryName; }
 }
