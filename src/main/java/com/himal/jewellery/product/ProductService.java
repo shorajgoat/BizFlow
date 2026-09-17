@@ -1,64 +1,84 @@
 package com.himal.jewellery.product;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
-
+import com.himal.jewellery.category.Category;
+import com.himal.jewellery.category.CategoryRepository;
+import com.himal.jewellery.exception.CategoryNotFoundException;
+import com.himal.jewellery.exception.ProductNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import com.himal.jewellery.exception.ProductNotFoundException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class ProductService {
-@Autowired
-private ProductRepository productRepo;
 
-public List<ProductResponseDto>getAllProduct(){
-	return productRepo.findAll().stream()
-			.map(product->new ProductResponseDto(product))
-			.collect(Collectors.toList());
-}
-public ProductResponseDto getProductById(Long id){
-	Product product=productRepo.findById(id).orElseThrow(()
-			->new ProductNotFoundException("Product of This Id doesnt Exist"));
-	return new ProductResponseDto(product);
-}
+    @Autowired
+    private ProductRepository productRepository;
 
-public ProductResponseDto createProduct(ProductRequestDto dto) {
-	Product product=new Product
-			(dto.getName(),dto.getPurchasePrice(),dto.getPrice(),dto.getStock(),dto.getMinStock(),dto.getSource());
-	return new ProductResponseDto(productRepo.save(product));
-}
+    @Autowired
+    private CategoryRepository categoryRepository;
 
-public ProductResponseDto updateProduct(Long id,ProductRequestDto dto) {
-	Product product=productRepo.findById(id).orElseThrow(()->new ProductNotFoundException("Product of this Id not found"));
-	 product.setName(dto.getName());
-     product.setPurchasePrice(dto.getPurchasePrice());
-     product.setPrice(dto.getPrice());
-     product.setStock(dto.getStock());
-     product.setMinStock(dto.getMinStock());
-     product.setSource(dto.getSource());
-	return new ProductResponseDto(productRepo.save(product));
-	
-}
+    public Page<ProductResponseDto> getAllProducts(Pageable pageable) {
+        Page<Product> products = productRepository.findAll(pageable);
+        return products.map(product -> new ProductResponseDto(product));
+    }
 
-public void deleteProduct(Long id) {
-	Product product=productRepo.findById(id).orElseThrow(()->new ProductNotFoundException("Product cant be found "));
-	productRepo.delete(product);
-}
+    public ProductResponseDto getProductById(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
+        return new ProductResponseDto(product);
+    }
 
-public List<String>getAllProductName(){
-	return productRepo.findAll().stream()
-			.map(product->product.getName())
-			.collect(Collectors.toList());
-}
+    public ProductResponseDto createProduct(ProductRequestDto dto) {
+        Category category = categoryRepository.findById(dto.getCategoryId())
+                .orElseThrow(() -> new CategoryNotFoundException("Category not found with id: " + dto.getCategoryId()));
 
-public List<Product>getLowStockProducts(){
-	return productRepo.findAll().stream()
-			.filter(product->product.getStock()<product.getMinStock())
-			.collect(Collectors.toList());
-}
+        Product product = new Product(dto.getName(), dto.getPurchasePrice(), dto.getPrice(),
+                dto.getStock(), dto.getMinStock(), dto.getSource(), category);
+        Product saved = productRepository.save(product);
+        return new ProductResponseDto(saved);
+    }
 
+    public ProductResponseDto updateProduct(Long id, ProductRequestDto dto) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
+
+        Category category = categoryRepository.findById(dto.getCategoryId())
+                .orElseThrow(() -> new CategoryNotFoundException("Category not found with id: " + dto.getCategoryId()));
+
+        product.setName(dto.getName());
+        product.setPurchasePrice(dto.getPurchasePrice());
+        product.setPrice(dto.getPrice());
+        product.setStock(dto.getStock());
+        product.setMinStock(dto.getMinStock());
+        product.setSource(dto.getSource());
+        product.setCategory(category);
+
+        Product updated = productRepository.save(product);
+        return new ProductResponseDto(updated);
+    }
+
+    public void deleteProduct(Long id) {
+        if (!productRepository.existsById(id)) {
+            throw new ProductNotFoundException("Product not found with id: " + id);
+        }
+        productRepository.deleteById(id);
+    }
+
+    public List<String> getAllProductNames() {
+        return productRepository.findAll()
+                .stream()
+                .map(product -> product.getName())
+                .collect(Collectors.toList());
+    }
+
+    public List<Product> getLowStockProducts() {
+        return productRepository.findAll()
+                .stream()
+                .filter(product -> product.getStock() < product.getMinStock())
+                .collect(Collectors.toList());
+    }
 }
