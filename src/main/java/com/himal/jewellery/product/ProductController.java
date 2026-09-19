@@ -2,6 +2,9 @@ package com.himal.jewellery.product;
 
 import com.himal.jewellery.exception.ApiResponse;
 import jakarta.validation.Valid;
+
+import java.math.BigDecimal;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,7 +19,18 @@ public class ProductController {
 
     @Autowired
     private ProductService productService;
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<Page<ProductResponseDto>>> searchProducts(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            Pageable pageable) {
 
+        Page<ProductResponseDto> results = productService.searchProducts(name, categoryId, minPrice, maxPrice, pageable);
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), "Search results", results));
+    }
+    
     @GetMapping
     public ResponseEntity<ApiResponse<Page<ProductResponseDto>>> getAllProducts(Pageable pageable) {
         Page<ProductResponseDto> products = productService.getAllProducts(pageable);
