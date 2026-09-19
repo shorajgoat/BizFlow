@@ -1,120 +1,181 @@
-# Himal Jewellery — Backend Management System
+<div align="center">
 
-A full-stack backend API for a jewellery shop, built with **Spring Boot 3**, **PostgreSQL**, and **JWT authentication**. Manages products, categories, customers, suppliers, sales (POS/billing), purchases, box orders, and expense tracking, with role-based access control for Admin and Staff users.
+# BizFlow
 
-## Features
+### Java & Spring Boot Jewellery Business Management API
 
-- **Authentication & Authorization** — JWT-based auth with access + refresh tokens, role-based access control (ADMIN/STAFF) via Spring Security
-- **Product & Category Management** — full CRUD, pagination, sorting, and dynamic search/filtering (by name, category, price range) using JPA Specifications
-- **Customer Management** — CRUD with due/credit balance tracking
-- **Supplier Management** — CRUD
-- **Billing / POS** — transactional sale processing with automatic stock deduction, price recorded at time of sale (not live-priced), rollback on failure
-- **Purchases** — supplier restocking flow, inverse of the sale flow
-- **Box Orders** — custom order tracking with status lifecycle
-- **Expense Tracking** — CRUD
-- **Reports** — daily and monthly sales/expense aggregation via JPQL
-- **Global exception handling** — consistent JSON error shape across the entire API
-- **API documentation** — interactive Swagger UI
-- **Dockerized** — one-command startup for the full stack (API + PostgreSQL)
+A production-minded backend for managing jewellery inventory, customers, suppliers, purchasing, sales, expenses, and business reporting.
 
-## Tech Stack
+[![Java](https://img.shields.io/badge/Java-17-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://www.java.com/)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.5.4-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Maven](https://img.shields.io/badge/Maven-Build-C71A36?style=for-the-badge&logo=apachemaven&logoColor=white)](https://maven.apache.org/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 
-| Layer | Technology |
-|---|---|
-| Language | Java 17 |
-| Framework | Spring Boot 3.5, Spring Security, Spring Data JPA |
+</div>
+
+---
+
+## About the project
+
+**BizFlow** is a Java-first REST API that gives jewellery businesses a single backend for daily operations. It is designed around clear domain modules, a layered Spring architecture, secure authentication, transactional business workflows, and consistent API responses.
+
+The repository is primarily a **Java / Spring Boot backend**. The small HTML portion provides the bundled landing page; the core application, business rules, persistence, security, and API design are implemented in Java.
+
+## What it can do
+
+- **Authentication and authorization** — JWT access and refresh tokens, BCrypt password hashing, and `ADMIN` / `STAFF` role-based access control.
+- **Inventory management** — products, categories, stock levels, pagination, sorting, and dynamic filtering with JPA Specifications.
+- **Sales and POS workflows** — transactional billing, automatic stock deduction, historical sale pricing, and customer due tracking.
+- **Purchasing** — supplier restocking workflows with purchase items and stock updates.
+- **Customer and supplier management** — structured CRUD APIs for business contacts and balances.
+- **Custom box orders** — order tracking with a dedicated status lifecycle.
+- **Expense tracking** — record and manage operational expenses.
+- **Business reporting** — daily and monthly sales and expense aggregation.
+- **Consistent error handling** — centralized exception handling with predictable JSON responses.
+- **Interactive API documentation** — Swagger / OpenAPI UI for exploring and testing endpoints.
+- **Containerized development** — Docker Compose setup for running the API with PostgreSQL.
+
+## Java technology stack
+
+| Area | Technology |
+| --- | --- |
+| Language | **Java 17** |
+| Framework | **Spring Boot 3.5.4** |
+| Web layer | Spring Web / REST APIs |
+| Security | Spring Security, JWT, BCrypt |
+| Persistence | Spring Data JPA, Hibernate |
 | Database | PostgreSQL |
-| Auth | JWT (jjwt), BCrypt password hashing |
-| API Docs | springdoc-openapi (Swagger UI) |
-| Testing | JUnit 5, Mockito |
-| Build | Maven |
-| Containerization | Docker, Docker Compose |
+| Validation | Jakarta Bean Validation |
+| API documentation | Springdoc OpenAPI / Swagger UI |
+| Testing | Spring Boot Test, JUnit 5 |
+| Build tool | Maven |
+| Deployment | Docker, Docker Compose |
 
 ## Architecture
 
-The project follows a **package-by-feature** structure — each business domain (`product`, `customer`, `sale`, etc.) contains its own entity, repository, service, controller, and DTOs, rather than grouping by technical layer. This keeps everything related to one feature in one place as the codebase grows.
+BizFlow uses a **package-by-feature** structure. Each domain keeps its own controller, service, repository, entities, DTOs, and business rules close together.
 
-```
+```text
 com.himal.jewellery/
-├── auth/          # Login, registration, token refresh
-├── security/      # JwtUtil, JwtAuthFilter
-├── config/        # SecurityConfig, CorsConfig, OpenApiConfig
-├── exception/     # Global exception handling, custom exceptions
-├── user/          # User entity, roles
-├── product/       # Product CRUD, search
-├── category/      # Category CRUD, Product relationship
-├── customer/      # Customer CRUD, dues
-├── supplier/      # Supplier CRUD
-├── sale/          # Billing/POS — the core transactional feature
-├── purchase/      # Supplier restocking
-├── boxorder/      # Box order tracking
-├── expense/       # Expense CRUD
-└── report/        # Sales/expense aggregation reports
+├── auth/          # Login, registration, and token refresh
+├── security/      # JWT filter and token utilities
+├── config/        # Security, CORS, and OpenAPI configuration
+├── exception/     # Global error handling and domain exceptions
+├── user/          # Users, roles, and authentication DTOs
+├── product/       # Product inventory and search
+├── category/      # Product categories
+├── customer/      # Customers and outstanding dues
+├── supplier/      # Supplier management
+├── sale/          # POS sales and stock deduction
+├── purchase/      # Supplier purchases and restocking
+├── boxorder/      # Custom box-order tracking
+├── expense/       # Business expense management
+└── report/        # Sales and expense reports
 ```
 
-Every request follows the same layered flow:
+The main request flow is:
 
-```
-HTTP Request → Controller → Service (business logic) → Repository → PostgreSQL
+```text
+HTTP Request → Controller → Service → Repository → PostgreSQL
                     ↓
               DTO validation
                     ↓
-         ApiResponse<T> / ErrorResponse (consistent JSON shape)
+         Consistent API response / error response
 ```
 
-## Key Design Decisions
+## Important engineering decisions
 
-- **DTOs everywhere, never raw entities in API responses** — prevents over-exposing internal fields and gives full control over the API contract independent of the database schema.
-- **Price stored at time of sale** — `SaleItem.unitPrice` is captured when a sale is made, not looked up live from `Product`, so historical receipts remain accurate even if prices change later.
-- **`@Transactional` on `completeSale()`** — a sale touches multiple tables (sales, sale_items, products, and optionally customers); the whole operation succeeds or rolls back together, preventing partial stock deduction without a matching sale record.
-- **JWT is stateless** — no server-side session storage; every request is authenticated independently via a signed token, with short-lived access tokens paired with longer-lived refresh tokens.
-- **Role-based endpoint protection** — `@PreAuthorize` decisions are made per-endpoint based on real business rules (e.g., only ADMIN can delete a product; both ADMIN and STAFF can complete a sale).
+- **DTO-based API contracts:** entities are not exposed directly from REST endpoints.
+- **Transactional sales:** completing a sale updates sales, sale items, inventory, and optional customer data as one atomic operation.
+- **Historical price accuracy:** sale item prices are captured at checkout instead of being read from the current product price later.
+- **Stateless JWT security:** requests are authenticated through signed tokens without server-side sessions.
+- **Feature-oriented modularity:** business domains remain isolated and easier to extend.
+- **Centralized exception handling:** clients receive a predictable error structure across the API.
 
-## Getting Started
+## Getting started
 
 ### Prerequisites
-- Java 17+
-- Maven
-- Docker & Docker Compose (for the containerized route), or a local PostgreSQL instance
 
-### Run with Docker (recommended)
+- Java 17 or newer
+- Maven 3.9+ (or use the included Maven Wrapper)
+- Docker and Docker Compose **or** a local PostgreSQL installation
+
+### Run with Docker
+
 ```bash
-docker-compose up --build
+git clone https://github.com/shorajgoat/BizFlow.git
+cd BizFlow
+docker compose up --build
 ```
-API available at `http://localhost:8081`
+
+The API is available at `http://localhost:8081`.
 
 ### Run locally
-1. Create a PostgreSQL database named `jewellery`
-2. Update `application.properties` with your local database credentials
-3. Run:
+
+1. Create a PostgreSQL database named `jewellery`.
+2. Configure the database credentials in `src/main/resources/application.properties`.
+3. Start the application:
+
 ```bash
-mvn spring-boot:run
+./mvnw spring-boot:run
 ```
 
-### API Documentation
-Once running, visit:
-```
-http://localhost:8081/swagger-ui.html
-```
-Use the **Authorize** button to paste a JWT and test protected endpoints directly from the browser.
+On Windows:
 
-## Running Tests
+```powershell
+mvnw.cmd spring-boot:run
+```
+
+## API documentation
+
+After starting the application, open:
+
+- Swagger UI: <http://localhost:8081/swagger-ui.html>
+- OpenAPI JSON: <http://localhost:8081/v3/api-docs>
+
+Use Swagger's **Authorize** button with a JWT access token to test protected endpoints.
+
+## Typical API flow
+
+```text
+Register / Login
+      ↓
+Receive access + refresh tokens
+      ↓
+Authorize protected requests
+      ↓
+Create products and manage stock
+      ↓
+Process purchases and sales
+      ↓
+Review customers, expenses, and reports
+```
+
+## Testing
+
+Run the test suite with the Maven Wrapper:
+
 ```bash
-mvn test
+./mvnw test
 ```
 
-## Sample API Flow
+## Project status
 
-1. `POST /api/auth/register` — create an account
-2. `POST /api/auth/login` — receive an access token + refresh token
-3. Attach `Authorization: Bearer <accessToken>` to subsequent requests
-4. `POST /api/products` (ADMIN) — add inventory
-5. `POST /api/sales` — process a sale; stock deducts automatically
-6. `GET /api/reports/daily?date=2026-09-19` — view daily performance
+BizFlow is an actively evolving Java backend project. Planned improvements include broader controller/service integration coverage, a GitHub Actions CI pipeline, Redis caching for frequently accessed inventory, and cloud deployment with managed PostgreSQL.
 
-## Roadmap / Future Improvements
+## Contributing
 
-- Additional integration tests (`@DataJpaTest`, `@WebMvcTest`) across all Services and Controllers
-- CI/CD pipeline via GitHub Actions
-- Redis caching for frequently-read product data
-- Cloud deployment with managed PostgreSQL
+Ideas, bug reports, and pull requests are welcome. For substantial changes, please open an issue first so the proposed design can be discussed.
+
+## License
+
+No license has been declared yet. Contact the repository owner before redistributing this project.
+
+---
+
+<div align="center">
+
+Built with Java, Spring Boot, PostgreSQL, and a focus on maintainable backend engineering.
+
+</div>
